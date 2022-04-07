@@ -3,12 +3,15 @@ version: '3'
 services:
   nginx:
     build: ./confs/nginx
+    restart: always
     ports:
+      - '80:80'
       - '443:443'
       - '5000:5000'
+      - '8082:8082'
     volumes:
       - ./confs/certbot/conf:/etc/letsencrypt
-      - ./confs/certbot/www:/var/www/certbot
+      - ./confs/certbot/www:/usr/share/nginx/html
     links:
       - nexus
     command: [ nginx, '-g', 'daemon off;' ]
@@ -19,10 +22,12 @@ services:
       - ./confs/certbot/conf:/etc/letsencrypt
       - ./confs/certbot/www:/var/www/certbot
   nexus:
+    restart: always
     image: sonatype/nexus3
     volumes:
-      - 'nexus-data:/nexus-data'
-
-volumes:
-  nexus-data:
+    - ./nexus-data:/nexus-data
+    ulimits:
+      nofile:
+          soft: 65536
+          hard: 65536
 

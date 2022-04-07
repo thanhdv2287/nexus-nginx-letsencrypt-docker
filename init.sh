@@ -5,11 +5,16 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-domains=(example.com www.example.com)
+## Fixing permissions for entrypoint.sh script
+chmod +x confs/certbot/entrypoint.sh
+
+read -p "Enter your domain, like nexus.example.com: " nexus_domain
+
+domains=($nexus_domain www.$nexus_domain)
 rsa_key_size=4096
 data_path="./confs/certbot"
-email="you@yourdomain.com" # Adding a valid address is strongly recommended
-staging=1 # Set to 1 if you're testing your setup to avoid hitting request limits
+read -p "Enter your email (adding a valid address is strongly recommended): " email # Adding a valid address is strongly recommended
+read -p "Select mode: 1 or 0 (1- testing)/(0 - actual deploy): " staging # Set to 1 if you're testing your setup to avoid hitting request limits
 
 if [ -d "$data_path" ]; then
   sed -i 's/DOMAINNAME/'$domains'/g' ./confs/nginx/nginx.conf
@@ -19,12 +24,33 @@ if [ -d "$data_path" ]; then
   fi
 fi
 
+## Cheking your input
+echo "Check your input:"
+echo
+echo "Your domain: $nexus_domain
+Your email: $email
+Mode: $staging"
+read -p "Is this correct? (y/N) " correct
+  if [ "$correct" != "Y" ] && [ "$correct" != "y" ]; then
+    exit
+  fi
 
+if [ ! -e "nexus-data/" ]; then
+  echo "### Creating directory for nexus data..."
+  mkdir nexus-data
+  echo
+  echo "### Changing ownership (requires sudo) for nexus data..."
+  sudo chown -R 200:200 nexus-data 
+fi
+## Fix permissions anyway
+sudo chown -R 200:200 nexus-data
+
+## For guest from future, you may want to check if these links are still working, otherwise feel free to change them
 if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
   echo "### Downloading recommended TLS parameters ..."
   mkdir -p "$data_path/conf"
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/ssl-dhparams.pem > "$data_path/conf/ssl-dhparams.pem"
+  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
+  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > "$data_path/conf/ssl-dhparams.pem"
   echo
 fi
 
@@ -32,7 +58,7 @@ echo "### Creating dummy certificate for $domains ..."
 path="/etc/letsencrypt/live/$domains"
 mkdir -p "$data_path/conf/live/$domains"
 docker-compose run --rm --entrypoint "\
-  openssl req -x509 -nodes -newkey rsa:1024 -days 1\
+  openssl req -x509 -nodes -newkey rsa:2048 -days 1\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
     -subj '/CN=localhost'" certbot
@@ -42,7 +68,7 @@ echo
 echo "### Starting nginx ..."
 docker-compose up --force-recreate -d nginx
 echo
-
+sleep 5
 echo "### Deleting dummy certificate for $domains ..."
 docker-compose run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/$domains && \
@@ -74,7 +100,9 @@ docker-compose run --rm --entrypoint "\
     $domain_args \
     --rsa-key-size $rsa_key_size \
     --agree-tos \
-    --force-renewal" certbot
+    --force-renewal \
+    --no-eff-email \
+    -v" certbot
 echo
 
 echo "### Reloading nginx ..."
@@ -84,9 +112,8 @@ docker-compose up -d
 until curl -sk -f https://$domains -o /dev/null ; do
     sleep 5
 done
-adminpass=`docker-compose exec nexus sudo cat /nexus-data/admin.password`
+adminpass=`docker-compose exec nexus cat /nexus-data/admin.password`
 echo '### nexus admin username: admin'
 echo '### nexus admin password:' $adminpass
 echo '### change your password after login ###'
-curl -u admin:$adminpass -k -H 'Content-Type: application/json' 'https://'$domains'/service/rest/v1/script'  -d '{"name": "CreateDockerProxy","type": "groovy","content": "repository.createDockerProxy('\''docker-proxy-registry'\'', '\''https://registry-1.docker.io'\'', '\''HUB'\'', null, 5000, null)"}'
-curl -X POST -u admin:$adminpass -k -H 'Content-Type: text/plain' 'https://'$domains'/service/rest/v1/script/CreateDockerProxy/run'
+echo "### You can visit your Nexus OSS Repository here: https://$domains "
