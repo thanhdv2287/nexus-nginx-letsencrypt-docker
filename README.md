@@ -11,7 +11,7 @@ this [this](https://medium.com/@numb95/setup-nexus-repository-manager-with-nginx
 - Installed [docker(ubuntu for example)](https://docs.docker.com/engine/install/ubuntu/)
 - `sudo usermod -aG docker $USER` for user which will run docker commands from [Post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/)
 - Installed [docker-compose](https://docs.docker.com/compose/install/)
-- Installed **git** (`sudo apt-get update && sudo apt-get install git-all -y`)
+- Installed **git** (`sudo apt-get update && sudo apt-get install git -y`)
 - Registered domain for SSL purposes with both YOUR_DOMAIN.com and **www**.YOUR_DOMAIN.com *A-records* pointed to ip address of your server.
 
 ## Installation  
