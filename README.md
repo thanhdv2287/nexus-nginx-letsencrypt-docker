@@ -40,3 +40,16 @@ After successful finish you can visit (https://YOUR_DOMAIN.COM) for futher Nexus
 ## Note
 1) We exposed on Nginx container additional `5000` and `8082` ports with **SSL** enabled for future usage, for example **docker-hosted** or **docker-proxy** repositories so you don't have to rebuild containers.
 2) If you want to change your domains after script execution (for example in case of some mistake or other reason) - replace parts with your previous domain name in [conf/nginx/nginx.conf](https://github.com/Vladkarok/nexus-nginx-letsencrypt-docker/blob/master/confs/nginx/nginx.conf) on lines 9, 10 and 17 with `DOMAINNAME` string if you want the script to replace this values **or** you can edit it manually.
+
+## 
+If you need to connect to Nexus via https://nexus.domain...
+1) Open port connecter 8082 http on the nexus server
+![Screen Shot 2023-05-11 at 13 56 28](https://github.com/thanhdv2287/nexus-nginx-letsencrypt-docker/assets/65655156/85dc5284-3a36-47ff-a506-1f87e9601c37)
+2) Login Nexus docker repostory by: docker login https://nexus.domain:8082 -uadmin -p123456 
+![Screen Shot 2023-05-11 at 14 00 54](https://github.com/thanhdv2287/nexus-nginx-letsencrypt-docker/assets/65655156/705b0044-41d5-405b-ade6-f475a7ae3066)
+3) Pull or Push will success
+
+![Screen Shot 2023-05-11 at 14 03 07](https://github.com/thanhdv2287/nexus-nginx-letsencrypt-docker/assets/65655156/a463a0e3-7944-48a9-9e2e-a50d5dfa2cd6)
+![Screen Shot 2023-05-11 at 14 03 45](https://github.com/thanhdv2287/nexus-nginx-letsencrypt-docker/assets/65655156/d2c66128-f879-4009-8835-e0511d340a6d)
+
+
